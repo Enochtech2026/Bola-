@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>E-library — SPA</title>
+  <link rel="stylesheet" href="static/css/styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <h1>E-library</h1>
+      <p class="tagline">Clean, simple electronic library (HTML/CSS/JS)</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="controls">
+      <input id="search" placeholder="Search by title, author or ISBN" />
+      <div>
+        <button id="btn-add" class="btn primary">Add Book</button>
+        <button id="btn-export" class="btn">Export JSON</button>
+        <input id="import-file" type="file" accept="application/json" style="display:none" />
+        <button id="btn-import" class="btn">Import JSON</button>
+      </div>
+    </div>
+
+    <section id="list" class="book-list" aria-live="polite"></section>
+  </main>
+
+  <dialog id="book-dialog" class="dialog">
+    <form method="dialog" id="book-form">
+      <h3 id="form-title">Add Book</h3>
+      <input type="hidden" id="book-id">
+      <label>Title<input id="title" required></label>
+      <label>Author<input id="author" required></label>
+      <label>Year<input id="year" type="number" min="0"></label>
+      <label>ISBN<input id="isbn"></label>
+      <label>Description<textarea id="description" rows="4"></textarea></label>
+      <menu class="dialog-actions">
+        <button id="cancel" class="btn">Cancel</button>
+        <button id="save" class="btn primary" type="submit">Save</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <script src="static/js/app.js"></script>
+</body>
+</html>

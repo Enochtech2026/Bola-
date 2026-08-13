@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}{{ book.title }} - BL-Library{% endblock %}
+{% block content %}
+
+<div class="row">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header">
+        <h1 class="card-title">{{ book.title }}</h1>
+      </div>
+      <div class="card-body">
+        <div style="margin-bottom: 20px;">
+          <p style="font-size: 1.1rem; color: #666; margin: 0;">
+            <strong>Author:</strong> {{ book.author }}
+          </p>
+          {% if book.year %}
+            <p style="color: #999; margin: 5px 0 0 0;">Published: {{ book.year }}</p>
+          {% endif %}
+        </div>
+        
+        {% if book.isbn %}
+          <div style="background: #f5f5f5; padding: 10px; border-radius: 4px; margin-bottom: 20px;">
+            <strong>ISBN:</strong> {{ book.isbn }}
+          </div>
+        {% endif %}
+        
+        {% if book.category %}
+          <div style="margin-bottom: 15px;">
+            <span class="book-category">{{ book.category }}</span>
+          </div>
+        {% endif %}
+        
+        {% if book.description %}
+          <div style="background: white; padding: 15px; border-left: 4px solid var(--bl-accent); margin-bottom: 20px; line-height: 1.8;">
+            {{ book.description }}
+          </div>
+        {% endif %}
+        
+        {% if book.filename %}
+          <div style="margin-bottom: 20px;">
+            <a class="btn btn-primary btn-lg" href="{{ url_for('uploads', filename=book.filename) }}" target="_blank">
+              📄 Read PDF
+            </a>
+          </div>
+        {% endif %}
+        
+        <div style="border-top: 1px solid #ddd; padding-top: 20px; margin-top: 20px;">
+          <a class="btn btn-secondary" href="{{ url_for('edit_book', book_id=book.id) }}">✏️ Edit</a>
+          <a class="btn btn-outline-primary" href="{{ url_for('index') }}">← Back to Books</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title">Book Information</h5>
+      </div>
+      <div class="card-body">
+        <p><strong>Category:</strong><br>{{ book.category or 'N/A' }}</p>
+        {% if book.isbn %}
+          <p><strong>ISBN:</strong><br>{{ book.isbn }}</p>
+        {% endif %}
+        {% if book.year %}
+          <p><strong>Year:</strong><br>{{ book.year }}</p>
+        {% endif %}
+        <p><strong>Added:</strong><br>Available in library</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}BL-Library{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  </head>
+  <body>
+    <!-- Header Banner -->
+    <div class="header-banner">
+      <div class="container">
+        <h1>BL-Library</h1>
+        <p>Clean, Simple & Professional Digital Library</p>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark mb-4">
+      <div class="container">
+        <a class="navbar-brand" href="{{ url_for('index') }}">📚 BL-Library</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}">Home</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}#category">Category</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}">Books</a></li>
+            {% if current_user.is_authenticated %}
+              <li class="nav-item"><span class="nav-link">Welcome, {{ current_user.username }}</span></li>
+              {% if current_user.is_admin %}
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_bulk_upload') }}">Admin Panel</a></li>
+              {% endif %}
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">Logout</a></li>
+            {% else %}
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}">Login</a></li>
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('register') }}">Register</a></li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container mb-5">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, msg in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else category }}">
+              {{ msg }}
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer mt-auto">
+      <div class="container">
+        <div class="row">
+          <div class="col-md-4">
+            <h5>About BL-Library</h5>
+            <p>BL-Library is a clean, simple, and professional digital library management system designed to help users discover and manage their favorite books efficiently.</p>
+          </div>
+          <div class="col-md-4">
+            <h5>Useful Links</h5>
+            <ul style="list-style: none; padding: 0;">
+              <li><a href="{{ url_for('index') }}">Home</a></li>
+              <li><a href="{{ url_for('index') }}">Books</a></li>
+              <li><a href="{{ url_for('index') }}">Categories</a></li>
+              {% if not current_user.is_authenticated %}
+                <li><a href="{{ url_for('register') }}">Register</a></li>
+              {% endif %}
+            </ul>
+          </div>
+          <div class="col-md-4">
+            <h5>Contact Us</h5>
+            <p>📧 support@bl-library.edu</p>
+            <p>📞 +234 800 000 0000</p>
+            <p>🌐 <a href="#">www.bl-library.edu</a></p>
+          </div>
+        </div>
+        <div class="footer-divider"></div>
+        <div class="copyright">
+          <p>&copy; 2026 BL-Library. All rights reserved.</p>
+        </div>
+      </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

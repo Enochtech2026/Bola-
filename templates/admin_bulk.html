@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block title %}Admin Bulk Upload - BL-Library{% endblock %}
+{% block content %}
+
+<div class="row">
+  <div class="col-md-8 offset-md-2">
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">📊 Admin Bulk Upload</h2>
+      </div>
+      <div class="card-body">
+        <div style="background: #f9f9f9; padding: 15px; border-radius: 4px; margin-bottom: 20px; border-left: 4px solid var(--bl-accent);">
+          <p style="margin: 0 0 10px 0;"><strong>Instructions:</strong></p>
+          <ul style="margin: 0; padding-left: 20px;">
+            <li>Upload a <strong>CSV file</strong> with columns: <code>title, author, year, isbn, description, category</code></li>
+            <li>Or upload a <strong>ZIP file</strong> containing PDF files and a CSV metadata file</li>
+            <li>This feature is restricted to administrators only</li>
+          </ul>
+        </div>
+        
+        <form method="post" enctype="multipart/form-data">
+          <div class="form-group">
+            <label for="file">Select File *</label>
+            <div class="input-group">
+              <input 
+                id="file"
+                type="file" 
+                name="file" 
+                class="form-control form-control-lg"
+                accept=".csv,.zip"
+                required
+              >
+              <span class="input-group-text">.csv or .zip</span>
+            </div>
+            <small style="color: #999; display: block; margin-top: 5px;">
+              Accepted formats: CSV (Comma-Separated Values) or ZIP archive
+            </small>
+          </div>
+          
+          <div style="border-top: 1px solid #ddd; padding-top: 20px; margin-top: 30px;">
+            <button type="submit" class="btn btn-primary btn-lg">
+              ⬆️ Upload File
+            </button>
+            <a class="btn btn-secondary btn-lg" href="{{ url_for('index') }}">
+              Cancel
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+    
+    <div class="card" style="margin-top: 30px;">
+      <div class="card-header">
+        <h5 class="card-title">📝 CSV Format Example</h5>
+      </div>
+      <div class="card-body">
+        <pre style="background: #f5f5f5; padding: 15px; border-radius: 4px; overflow-x: auto;">title,author,year,isbn,description,category
+Clean Code,Robert C. Martin,2008,9780132350884,Guidelines for writing clean code.,general
+Intro to Algorithms,Cormen et al.,2009,9780262033848,Algorithms textbook.,school</pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
