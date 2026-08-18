@@ -94,6 +94,8 @@ _tables_created = False
 def ensure_tables_exist():
     global _tables_created
     if not _tables_created:
+        os.makedirs(DB_PATH, exist_ok=True)
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
         db.create_all()
         _tables_created = True
 
