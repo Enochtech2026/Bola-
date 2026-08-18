@@ -7,7 +7,7 @@
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
     <div>
       <h2 style="color: var(--bl-primary); margin-bottom: 6px; font-weight: 700;">Digital Library Catalog</h2>
-      <p style="color: var(--text-light); margin: 0; font-size: 1.05rem;">Browse all available books below, filter by category, or search by title and author — no ISBN required!</p>
+      <p style="color: var(--text-light); margin: 0; font-size: 1.05rem;">All books are arranged in order below — just browse and download the PDF you need. No ISBN, author, or title required!</p>
     </div>
     <div>
       <span class="badge" style="background-color: var(--bl-primary); color: white; font-size: 0.95rem; padding: 10px 16px; border-radius: 20px;">
@@ -108,7 +108,7 @@
           <div class="book-actions">
             {% if book.filename %}
               <a class="btn btn-sm btn-primary" href="{{ url_for('uploads', filename=book.filename) }}" target="_blank">
-                📄 Read PDF
+                ⬇️ Download PDF
               </a>
             {% endif %}
             <a class="btn btn-sm btn-outline-primary" href="{{ url_for('view_book', book_id=book.id) }}">
@@ -137,6 +137,38 @@
     {% endif %}
   </div>
 {% endif %}
+
+<!-- Complete Book List (Ordered) -->
+<div id="booklist" style="margin-top: 50px; padding-top: 35px; border-top: 2px solid #e0e0e0;">
+  <h3 style="color: #1a3a52; margin-bottom: 8px; font-weight: 700;">📋 Complete Book List (In Order)</h3>
+  <p style="color: var(--text-light); margin-bottom: 20px;">All books arranged in order below. Click any <strong>Download PDF</strong> button to get the book directly — no need to search by ISBN, author, or title.</p>
+
+  <div class="book-list">
+    {% for book in books %}
+    <div class="book-list-item">
+      <div class="book-list-number">{{ loop.index }}</div>
+      <div class="book-list-info">
+        <div class="book-list-title">{{ book.title }}</div>
+        <div class="book-list-meta">
+          <span class="book-category-tag">{{ book.category or 'General' }}</span>
+          {% if book.author %}<span class="book-list-author">by {{ book.author }}</span>{% endif %}
+          {% if book.year %}<span class="book-list-year">📅 {{ book.year }}</span>{% endif %}
+        </div>
+      </div>
+      <div class="book-list-actions">
+        {% if book.filename %}
+          <a class="btn btn-sm btn-primary" href="{{ url_for('uploads', filename=book.filename) }}" target="_blank">
+            ⬇️ Download PDF
+          </a>
+        {% endif %}
+        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('view_book', book_id=book.id) }}">
+          👁️ Details
+        </a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
 
 <!-- Browse Categories Section -->
 <div id="category" style="margin-top: 50px; padding-top: 35px; border-top: 2px solid #e0e0e0;">

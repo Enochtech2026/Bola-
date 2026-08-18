@@ -427,10 +427,6 @@ def init_db(seed=False):
 
 def seed_data():
     sample = [
-        # Base Tech Books
-        Book(title='Clean Code', author='Robert C. Martin', year=2008, isbn='9780132350884', description='A handbook of agile software craftsmanship with best practices for writing clean, readable, and maintainable code.', category='School', filename='clean_code.pdf'),
-        Book(title='The Pragmatic Programmer', author='Andrew Hunt', year=1999, isbn='9780201616224', description='Classic guide to software craftsmanship, personal responsibility, and career development for developers.', category='School', filename='pragmatic_programmer.pdf'),
-        Book(title='Introduction to Algorithms', author='Cormen, Leiserson, Rivest, Stein', year=2009, isbn='9780262033848', description='The premier comprehensive textbook on computer algorithms and data structures.', category='School', filename='intro_algorithms.pdf'),
         # School
         Book(title='Introduction to Calculus', author='James Stewart', year=2020, isbn='9781285740621', description='A comprehensive guide to differential and integral calculus for beginners.', category='School', filename='Introduction_to_Calculus.pdf'),
         Book(title='Principles of Economics', author='N. Gregory Mankiw', year=2021, isbn='9780357038314', description='Foundational concepts in micro and macroeconomics.', category='School', filename='Principles_of_Economics.pdf'),

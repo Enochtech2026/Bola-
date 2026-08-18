@@ -357,6 +357,97 @@ main {
   border-top: 1px solid #eee;
 }
 
+/* Book List (Ordered) */
+.book-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 20px 0 40px;
+}
+
+.book-list-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: white;
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 8px;
+  padding: 14px 18px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  transition: all 0.2s ease;
+}
+
+.book-list-item:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(26, 58, 82, 0.12);
+  border-left: 4px solid var(--bl-accent);
+}
+
+.book-list-number {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--bl-primary), var(--bl-secondary));
+  color: white;
+  font-weight: 700;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.book-list-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.book-list-title {
+  font-weight: 700;
+  color: var(--bl-primary);
+  font-size: 1rem;
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+
+.book-list-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.book-list-author {
+  color: var(--text-light);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.book-list-year {
+  color: #999;
+  font-size: 0.8rem;
+}
+
+.book-list-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+  .book-list-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .book-list-actions {
+    width: 100%;
+  }
+  .book-list-actions .btn {
+    flex: 1;
+  }
+}
+
 /* Category Filter Pills */
 .category-pills {
   display: flex;
