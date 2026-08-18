@@ -55,6 +55,49 @@ class Book(db.Model):
         return f'<Book {self.title} by {self.author}>'
 
 
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=True)
+    matric_no = db.Column(db.String(80), unique=True, nullable=True)
+    email = db.Column(db.String(120), unique=True, nullable=True)
+    department = db.Column(db.String(120), nullable=True)
+    level = db.Column(db.String(40), nullable=True)
+    is_admin = db.Column(db.Boolean, default=False)
+    password_hash = db.Column(db.String(200), nullable=False)
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+    def get_reset_token(self):
+        s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+        return s.dumps({'user_id': self.id}, salt=app.config['SECURITY_PASSWORD_SALT'])
+
+    @staticmethod
+    def verify_reset_token(token, expiration=3600):
+        s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token, salt=app.config['SECURITY_PASSWORD_SALT'], max_age=expiration)
+        except (BadSignature, SignatureExpired):
+            return None
+        user_id = data.get('user_id')
+        if not user_id:
+            return None
+        return User.query.get(user_id)
+
+
+_tables_created = False
+
+@app.before_request
+def ensure_tables_exist():
+    global _tables_created
+    if not _tables_created:
+        db.create_all()
+        _tables_created = True
+
+
 @app.route('/')
 def index():
     q = request.args.get('q', '').strip()
@@ -171,39 +214,6 @@ def uploads(filename):
         as_attachment=True,
         download_name=filename
     )
-
-
-class User(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=True)
-    matric_no = db.Column(db.String(80), unique=True, nullable=True)
-    email = db.Column(db.String(120), unique=True, nullable=True)
-    department = db.Column(db.String(120), nullable=True)
-    level = db.Column(db.String(40), nullable=True)
-    is_admin = db.Column(db.Boolean, default=False)
-    password_hash = db.Column(db.String(200), nullable=False)
-
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
-
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
-
-    def get_reset_token(self):
-        s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
-        return s.dumps({'user_id': self.id}, salt=app.config['SECURITY_PASSWORD_SALT'])
-
-    @staticmethod
-    def verify_reset_token(token, expiration=3600):
-        s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
-        try:
-            data = s.loads(token, salt=app.config['SECURITY_PASSWORD_SALT'], max_age=expiration)
-        except (BadSignature, SignatureExpired):
-            return None
-        user_id = data.get('user_id')
-        if not user_id:
-            return None
-        return User.query.get(user_id)
 
 
 @login_manager.user_loader
@@ -394,12 +404,6 @@ def init_db(seed=False):
     db.create_all()
     if seed:
         seed_data()
-
-
-# Auto-create tables on startup (needed for Render/gunicorn)
-with app.app_context():
-    os.makedirs(DB_PATH, exist_ok=True)
-    db.create_all()
 
 
 def seed_data():
