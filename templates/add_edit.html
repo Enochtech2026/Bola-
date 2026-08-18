@@ -11,51 +11,53 @@
       <div class="card-body">
         <form method="post" enctype="multipart/form-data">
           <input type="hidden" name="MAX_FILE_SIZE" value="104857600">
-          
+
           <div class="form-group">
             <label for="category">Category *</label>
             <select id="category" name="category" class="form-select form-select-lg">
-              <option value="general" {% if book and book.category=='general' %}selected{% endif %}>General</option>
-              <option value="school" {% if book and book.category=='school' %}selected{% endif %}>School</option>
-              <option value="fiction" {% if book and book.category=='fiction' %}selected{% endif %}>Fiction</option>
-              <option value="non-fiction" {% if book and book.category=='non-fiction' %}selected{% endif %}>Non-Fiction</option>
-              <option value="reference" {% if book and book.category=='reference' %}selected{% endif %}>Reference</option>
+              <option value="School" {% if book and book.category|lower=='school' %}selected{% endif %}>School</option>
+              <option value="Fiction" {% if book and book.category|lower=='fiction' %}selected{% endif %}>Fiction</option>
+              <option value="General" {% if not book or book.category|lower=='general' %}selected{% endif %}>General</option>
+              <option value="Science" {% if book and book.category|lower=='science' %}selected{% endif %}>Science</option>
+              <option value="Self-Help" {% if book and book.category|lower=='self-help' %}selected{% endif %}>Self-Help</option>
+              <option value="Reference" {% if book and book.category|lower=='reference' %}selected{% endif %}>Reference</option>
+              <option value="Non-Fiction" {% if book and book.category|lower=='non-fiction' %}selected{% endif %}>Non-Fiction</option>
             </select>
           </div>
-          
+
           <div class="form-group">
             <label for="title">Title *</label>
-            <input 
+            <input
               id="title"
-              name="title" 
-              class="form-control form-control-lg" 
+              name="title"
+              class="form-control form-control-lg"
               placeholder="Enter book title"
-              value="{{ book.title if book else '' }}" 
+              value="{{ book.title if book else '' }}"
               required
             >
           </div>
-          
+
           <div class="form-group">
             <label for="author">Author *</label>
-            <input 
+            <input
               id="author"
-              name="author" 
-              class="form-control form-control-lg" 
+              name="author"
+              class="form-control form-control-lg"
               placeholder="Enter author name"
-              value="{{ book.author if book else '' }}" 
+              value="{{ book.author if book else '' }}"
               required
             >
           </div>
-          
+
           <div class="row">
             <div class="col-md-6">
               <div class="form-group">
                 <label for="year">Publication Year</label>
-                <input 
+                <input
                   id="year"
-                  name="year" 
+                  name="year"
                   type="number"
-                  class="form-control form-control-lg" 
+                  class="form-control form-control-lg"
                   placeholder="e.g., 2024"
                   value="{{ book.year if book and book.year else '' }}"
                 >
@@ -63,37 +65,37 @@
             </div>
             <div class="col-md-6">
               <div class="form-group">
-                <label for="isbn">ISBN</label>
-                <input 
+                <label for="isbn">ISBN <span class="text-muted small" style="font-weight: normal;">(optional)</span></label>
+                <input
                   id="isbn"
-                  name="isbn" 
-                  class="form-control form-control-lg" 
-                  placeholder="e.g., 978-3-16-148410-0"
+                  name="isbn"
+                  class="form-control form-control-lg"
+                  placeholder="Optional (e.g., 978-3-16-148410-0)"
                   value="{{ book.isbn if book else '' }}"
                 >
               </div>
             </div>
           </div>
-          
+
           <div class="form-group">
             <label for="description">Description</label>
-            <textarea 
+            <textarea
               id="description"
-              name="description" 
-              class="form-control" 
+              name="description"
+              class="form-control"
               rows="6"
               placeholder="Enter a detailed description of the book"
             >{{ book.description if book else '' }}</textarea>
           </div>
-          
+
           <div class="form-group">
             <label for="file">Upload PDF (optional)</label>
             <div class="input-group">
-              <input 
+              <input
                 id="file"
-                type="file" 
-                name="file" 
-                accept="application/pdf" 
+                type="file"
+                name="file"
+                accept="application/pdf"
                 class="form-control form-control-lg"
               >
               <span class="input-group-text">PDF only (Max 100MB)</span>
@@ -104,7 +106,7 @@
               {% endif %}
             </small>
           </div>
-          
+
           <div style="border-top: 1px solid #ddd; padding-top: 20px; margin-top: 30px;">
             <button type="submit" class="btn btn-primary btn-lg">
               ✅ {{ action }}

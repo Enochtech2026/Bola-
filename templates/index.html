@@ -1,92 +1,123 @@
 {% extends 'base.html' %}
-{% block title %}Books - BL-Library{% endblock %}
+{% block title %}Books Catalog - BL-Library{% endblock %}
 {% block content %}
 
-<!-- Welcome Section -->
-<div style="background: white; padding: 30px; border-radius: 8px; margin-bottom: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-  <h2 style="color: #1a3a52; border-bottom: 3px solid #d4a574; padding-bottom: 10px; margin-bottom: 15px;">Welcome to BL-Library</h2>
-  <p>Browse our comprehensive collection of books across multiple categories. Use the search function below to find your desired titles or explore by category.</p>
+<!-- Welcome Hero Section -->
+<div style="background: white; padding: 28px 32px; border-radius: 10px; margin-bottom: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); border-left: 5px solid var(--bl-accent);">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+      <h2 style="color: var(--bl-primary); margin-bottom: 6px; font-weight: 700;">Digital Library Catalog</h2>
+      <p style="color: var(--text-light); margin: 0; font-size: 1.05rem;">Browse all available books below, filter by category, or search by title and author — no ISBN required!</p>
+    </div>
+    <div>
+      <span class="badge" style="background-color: var(--bl-primary); color: white; font-size: 0.95rem; padding: 10px 16px; border-radius: 20px;">
+        📚 {{ books|length }} Books Available
+      </span>
+    </div>
+  </div>
 </div>
 
-<!-- Search Section -->
+<!-- Search & Quick Filter Section -->
 <div class="search-section">
-  <h4>Search Books</h4>
   <form method="get" class="mb-0">
-    <div class="row g-3">
-      <div class="col-md-6">
-        <input 
-          name="q" 
-          type="search" 
-          class="form-control form-control-lg" 
-          placeholder="Search by title, author or ISBN" 
-          value="{{ q }}"
-        >
+    <div class="row g-3 align-items-center">
+      <div class="col-lg-6 col-md-6">
+        <div class="input-group">
+          <span class="input-group-text" style="background: #f8f9fa; border-right: none;">🔍</span>
+          <input
+            name="q"
+            type="search"
+            class="form-control form-control-lg"
+            style="border-left: none;"
+            placeholder="Search books by title, author, or keyword..."
+            value="{{ q }}"
+          >
+        </div>
       </div>
-      <div class="col-md-3">
+      <div class="col-lg-3 col-md-3">
         <select name="category" class="form-select form-select-lg">
           <option value="">All Categories</option>
-          <option value="school" {% if category=='school' %}selected{% endif %}>School</option>
-          <option value="general" {% if category=='general' %}selected{% endif %}>General</option>
-          <option value="fiction" {% if category=='fiction' %}selected{% endif %}>Fiction</option>
-          <option value="non-fiction" {% if category=='non-fiction' %}selected{% endif %}>Non-Fiction</option>
-          <option value="reference" {% if category=='reference' %}selected{% endif %}>Reference</option>
+          {% for cat in categories %}
+            <option value="{{ cat }}" {% if category|lower == cat|lower %}selected{% endif %}>{{ cat }}</option>
+          {% endfor %}
         </select>
       </div>
-      <div class="col-md-3">
-        <button class="btn btn-primary btn-lg w-100" type="submit">Search</button>
+      <div class="col-lg-3 col-md-3 d-flex gap-2">
+        <button class="btn btn-primary btn-lg flex-grow-1" type="submit">Search</button>
+        {% if q or category %}
+          <a class="btn btn-outline-secondary btn-lg" href="{{ url_for('index') }}" title="Clear Filters">Reset</a>
+        {% endif %}
       </div>
     </div>
   </form>
+
+  <!-- Quick Filter Pills -->
+  <div class="category-pills">
+    <span style="font-size: 0.85rem; font-weight: 700; color: var(--bl-primary); align-self: center; margin-right: 4px;">Quick Filter:</span>
+    <a href="{{ url_for('index') }}{% if q %}?q={{ q }}{% endif %}" class="category-pill {% if not category or category|lower == 'all' %}active{% endif %}">
+      All Books
+    </a>
+    {% for cat in categories %}
+      <a href="{{ url_for('index') }}?category={{ cat }}{% if q %}&q={{ q }}{% endif %}" class="category-pill {% if category|lower == cat|lower %}active{% endif %}">
+        {{ cat }}
+      </a>
+    {% endfor %}
+  </div>
 </div>
 
-<!-- Admin Actions -->
+<!-- Admin / User Bar -->
 {% if current_user.is_authenticated %}
-  <div style="margin-bottom: 30px; text-align: center;">
+  <div style="margin-bottom: 25px; display: flex; gap: 10px; justify-content: flex-end; align-items: center;">
     <a class="btn btn-accent" href="{{ url_for('add_book') }}">➕ Add New Book</a>
     {% if current_user.is_admin %}
-      <a class="btn btn-secondary" href="{{ url_for('admin_bulk_upload') }}">📊 Admin Panel</a>
+      <a class="btn btn-secondary" href="{{ url_for('admin_bulk_upload') }}">📊 Bulk Upload Panel</a>
     {% endif %}
-  </div>
-{% else %}
-  <div style="background: #f0f0f0; padding: 20px; border-radius: 8px; margin-bottom: 30px; text-align: center;">
-    <p style="margin: 0;">
-      <a href="{{ url_for('login') }}" class="btn btn-primary">Sign In</a> or
-      <a href="{{ url_for('register') }}" class="btn btn-accent">Register</a> to add and manage books
-    </p>
   </div>
 {% endif %}
 
-<!-- Books Display -->
+<!-- Available Books Display Grid -->
 {% if books %}
-  <div style="margin-top: 30px;">
-    <h3 style="color: #1a3a52; margin-bottom: 20px;">Available Books ({{ books|length }})</h3>
-    
+  <div style="margin-top: 10px;">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h3 style="color: #1a3a52; margin: 0; font-weight: 700;">
+        Available Books
+        <span style="font-size: 0.9rem; color: #666; font-weight: 400;">(Showing {{ books|length }}{% if category %} in {{ category }}{% endif %}{% if q %} matching "{{ q }}"{% endif %})</span>
+      </h3>
+      {% if q or category %}
+        <a href="{{ url_for('index') }}" class="btn btn-sm btn-outline-secondary">Show All Books</a>
+      {% endif %}
+    </div>
+
     <div class="book-grid">
       {% for book in books %}
       <div class="book-card">
         <div class="book-card-header">
+          <div class="top-meta">
+            <span class="book-category-tag">{{ book.category or 'General' }}</span>
+            {% if book.year %}
+              <span class="book-year-tag">📅 {{ book.year }}</span>
+            {% endif %}
+          </div>
           <div class="book-title">{{ book.title }}</div>
-          <div class="book-author">{{ book.author }}</div>
+          <div class="book-author">by {{ book.author }}</div>
         </div>
         <div class="book-card-body">
-          {% if book.isbn %}
-            <div class="book-isbn">ISBN: {{ book.isbn }}</div>
-          {% endif %}
-          {% if book.year %}
-            <div class="book-isbn">Published: {{ book.year }}</div>
-          {% endif %}
-          {% if book.category %}
-            <span class="book-category">{{ book.category }}</span>
-          {% endif %}
-          {% if book.description %}
-            <div class="book-description">{{ book.description }}</div>
-          {% endif %}
-          <div style="margin-top: 15px; display: flex; gap: 5px; flex-wrap: wrap;">
-            <a class="btn btn-sm btn-primary" href="{{ url_for('view_book', book_id=book.id) }}">View</a>
+          <div class="book-description">
+            {{ book.description or 'No description available for this title.' }}
+          </div>
+          <div class="book-actions">
+            {% if book.filename %}
+              <a class="btn btn-sm btn-primary" href="{{ url_for('uploads', filename=book.filename) }}" target="_blank">
+                📄 Read PDF
+              </a>
+            {% endif %}
+            <a class="btn btn-sm btn-outline-primary" href="{{ url_for('view_book', book_id=book.id) }}">
+              👁️ Details
+            </a>
             {% if current_user.is_authenticated %}
-              <a class="btn btn-sm btn-secondary" href="{{ url_for('edit_book', book_id=book.id) }}">Edit</a>
-              <form method="post" action="{{ url_for('delete_book', book_id=book.id) }}" style="display:inline-block" onsubmit="return confirm('Delete this book?');">
-                <button class="btn btn-sm btn-danger">Delete</button>
+              <a class="btn btn-sm btn-secondary" href="{{ url_for('edit_book', book_id=book.id) }}">✏️ Edit</a>
+              <form method="post" action="{{ url_for('delete_book', book_id=book.id) }}" style="display:inline-block; margin: 0;" onsubmit="return confirm('Delete {{ book.title|escape }}?');">
+                <button class="btn btn-sm btn-danger">🗑️</button>
               </form>
             {% endif %}
           </div>
@@ -96,42 +127,48 @@
     </div>
   </div>
 {% else %}
-  <div style="background: white; padding: 40px; border-radius: 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-    <h4 style="color: #999;">No Books Found</h4>
-    <p style="color: #999; margin: 10px 0 20px;">Try adjusting your search criteria or browse all available books.</p>
+  <div style="background: white; padding: 50px 30px; border-radius: 10px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin: 30px 0;">
+    <div style="font-size: 3rem; margin-bottom: 15px;">🔍</div>
+    <h4 style="color: var(--bl-primary); font-weight: 700;">No Books Found</h4>
+    <p style="color: var(--text-light); margin: 10px 0 20px;">We couldn't find any books matching your search. Try a different title, author, or category.</p>
+    <a class="btn btn-primary btn-lg" href="{{ url_for('index') }}">View All Available Books</a>
     {% if current_user.is_authenticated %}
-      <a class="btn btn-primary" href="{{ url_for('add_book') }}">Add the First Book</a>
+      <a class="btn btn-accent btn-lg ms-2" href="{{ url_for('add_book') }}">Add a New Book</a>
     {% endif %}
   </div>
 {% endif %}
 
-<div id="category" style="margin-top: 50px; padding-top: 30px; border-top: 2px solid #ddd;">
-  <h3 style="color: #1a3a52; margin-bottom: 20px;">Browse by Category</h3>
-  <div class="row">
-    <div class="col-md-3 mb-3">
-      <a href="{{ url_for('index') }}?category=school" class="card text-decoration-none" style="border: none; background: linear-gradient(135deg, #1a3a52, #2d5a7b); color: white; padding: 30px; text-align: center; cursor: pointer;">
-        <div style="font-size: 2rem; margin-bottom: 10px;">📚</div>
-        <div style="font-weight: 700; font-size: 1.1rem;">School</div>
-      </a>
-    </div>
-    <div class="col-md-3 mb-3">
-      <a href="{{ url_for('index') }}?category=general" class="card text-decoration-none" style="border: none; background: linear-gradient(135deg, #1a3a52, #2d5a7b); color: white; padding: 30px; text-align: center; cursor: pointer;">
-        <div style="font-size: 2rem; margin-bottom: 10px;">📖</div>
-        <div style="font-weight: 700; font-size: 1.1rem;">General</div>
-      </a>
-    </div>
-    <div class="col-md-3 mb-3">
-      <a href="{{ url_for('index') }}?category=fiction" class="card text-decoration-none" style="border: none; background: linear-gradient(135deg, #1a3a52, #2d5a7b); color: white; padding: 30px; text-align: center; cursor: pointer;">
-        <div style="font-size: 2rem; margin-bottom: 10px;">📝</div>
-        <div style="font-weight: 700; font-size: 1.1rem;">Fiction</div>
-      </a>
-    </div>
-    <div class="col-md-3 mb-3">
-      <a href="{{ url_for('index') }}?category=reference" class="card text-decoration-none" style="border: none; background: linear-gradient(135deg, #1a3a52, #2d5a7b); color: white; padding: 30px; text-align: center; cursor: pointer;">
-        <div style="font-size: 2rem; margin-bottom: 10px;">🔍</div>
-        <div style="font-weight: 700; font-size: 1.1rem;">Reference</div>
-      </a>
-    </div>
+<!-- Browse Categories Section -->
+<div id="category" style="margin-top: 50px; padding-top: 35px; border-top: 2px solid #e0e0e0;">
+  <h3 style="color: #1a3a52; margin-bottom: 8px; font-weight: 700;">Explore by Category</h3>
+  <p style="color: var(--text-light); margin-bottom: 20px;">Click on any category to view all corresponding titles instantly.</p>
+
+  <div class="category-cards-grid">
+    <a href="{{ url_for('index') }}?category=School" class="category-card" style="background: linear-gradient(135deg, #1a3a52, #2d5a7b);">
+      <div class="cat-icon">📚</div>
+      <div class="cat-name">School</div>
+      <div class="cat-count">Textbooks & Academic</div>
+    </a>
+    <a href="{{ url_for('index') }}?category=Fiction" class="category-card" style="background: linear-gradient(135deg, #2b580c, #4a7729);">
+      <div class="cat-icon">📝</div>
+      <div class="cat-name">Fiction</div>
+      <div class="cat-count">Novels & Stories</div>
+    </a>
+    <a href="{{ url_for('index') }}?category=General" class="category-card" style="background: linear-gradient(135deg, #78281f, #a93226);">
+      <div class="cat-icon">📖</div>
+      <div class="cat-name">General</div>
+      <div class="cat-count">History, Culture & Biographies</div>
+    </a>
+    <a href="{{ url_for('index') }}?category=Science" class="category-card" style="background: linear-gradient(135deg, #114b5f, #1a936f);">
+      <div class="cat-icon">🔬</div>
+      <div class="cat-name">Science</div>
+      <div class="cat-count">Physics, Tech & Biology</div>
+    </a>
+    <a href="{{ url_for('index') }}?category=Self-Help" class="category-card" style="background: linear-gradient(135deg, #7d3c98, #9b59b6);">
+      <div class="cat-icon">💡</div>
+      <div class="cat-name">Self-Help</div>
+      <div class="cat-count">Personal Development & Habits</div>
+    </a>
   </div>
 </div>
 

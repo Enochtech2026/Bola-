@@ -97,24 +97,32 @@ def ensure_tables_exist():
         os.makedirs(DB_PATH, exist_ok=True)
         os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
         db.create_all()
+        if not Book.query.first():
+            seed_data()
         _tables_created = True
 
 
 @app.route('/')
 def index():
     q = request.args.get('q', '').strip()
-    category = request.args.get('category', '')
+    category = request.args.get('category', '').strip()
     query = Book.query
     if q:
         query = query.filter(
             (Book.title.ilike(f'%{q}%')) |
             (Book.author.ilike(f'%{q}%')) |
+            (Book.description.ilike(f'%{q}%')) |
+            (Book.category.ilike(f'%{q}%')) |
             (Book.isbn.ilike(f'%{q}%'))
         )
-    if category:
-        query = query.filter(Book.category == category)
+    if category and category.lower() != 'all':
+        query = query.filter(Book.category.ilike(category))
     books = query.order_by(Book.title).all()
-    return render_template('index.html', books=books, q=q, category=category)
+    # Get distinct categories for filter buttons
+    raw_categories = db.session.query(Book.category).distinct().all()
+    categories = sorted(list({c[0] for c in raw_categories if c[0]}))
+    total_count = Book.query.count()
+    return render_template('index.html', books=books, q=q, category=category, categories=categories, total_count=total_count)
 
 
 @app.route('/book/<int:book_id>')
@@ -220,8 +228,8 @@ def uploads(filename):
             download_name=filename
         )
     return send_from_directory(
-        app.config['UPLOAD_FOLDER'], 
-        filename, 
+        app.config['UPLOAD_FOLDER'],
+        filename,
         as_attachment=True,
         download_name=filename
     )
@@ -418,9 +426,11 @@ def init_db(seed=False):
 
 
 def seed_data():
-    if Book.query.first():
-        return
     sample = [
+        # Base Tech Books
+        Book(title='Clean Code', author='Robert C. Martin', year=2008, isbn='9780132350884', description='A handbook of agile software craftsmanship with best practices for writing clean, readable, and maintainable code.', category='School', filename='clean_code.pdf'),
+        Book(title='The Pragmatic Programmer', author='Andrew Hunt', year=1999, isbn='9780201616224', description='Classic guide to software craftsmanship, personal responsibility, and career development for developers.', category='School', filename='pragmatic_programmer.pdf'),
+        Book(title='Introduction to Algorithms', author='Cormen, Leiserson, Rivest, Stein', year=2009, isbn='9780262033848', description='The premier comprehensive textbook on computer algorithms and data structures.', category='School', filename='intro_algorithms.pdf'),
         # School
         Book(title='Introduction to Calculus', author='James Stewart', year=2020, isbn='9781285740621', description='A comprehensive guide to differential and integral calculus for beginners.', category='School', filename='Introduction_to_Calculus.pdf'),
         Book(title='Principles of Economics', author='N. Gregory Mankiw', year=2021, isbn='9780357038314', description='Foundational concepts in micro and macroeconomics.', category='School', filename='Principles_of_Economics.pdf'),
@@ -527,7 +537,23 @@ def seed_data():
         Book(title='Emotional Intelligence', author='Daniel Goleman', year=2005, isbn='9780553383713', description='Why it can matter more than IQ.', category='Self-Help', filename='Emotional_Intelligence.pdf'),
         Book(title='Who Moved My Cheese?', author='Spencer Johnson', year=1998, isbn='9780399144462', description='An amazing way to deal with change in your work and life.', category='Self-Help', filename='Who_Moved_My_Cheese.pdf'),
     ]
-    db.session.bulk_save_objects(sample)
+    for s in sample:
+        existing = Book.query.filter_by(title=s.title).first()
+        if existing:
+            if s.filename and not existing.filename:
+                existing.filename = s.filename
+            if s.category and (not existing.category or existing.category.lower() == 'general'):
+                existing.category = s.category
+            if s.description and not existing.description:
+                existing.description = s.description
+            if s.author and not existing.author:
+                existing.author = s.author
+            if s.year and not existing.year:
+                existing.year = s.year
+            if s.isbn and not existing.isbn:
+                existing.isbn = s.isbn
+        else:
+            db.session.add(s)
     db.session.commit()
     # create admin user
     if not User.query.filter_by(username='admin').first():
