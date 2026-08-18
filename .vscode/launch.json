@@ -11,12 +11,26 @@
             "type": "chrome",
             "webRoot": "${workspaceFolder}"
         },
+
         {
+            "name": "Python: E-library Flask server",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/app.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Launch Chrome against localhost",
             "type": "chrome",
             "request": "launch",
-            "name": "Launch Chrome against localhost",
-            "url": "http://localhost:8080",
+            "url": "http://127.0.0.1:5000",
             "webRoot": "${workspaceFolder}"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Run E-library (Flask + Chrome)",
+            "configurations": ["Python: E-library Flask server", "Launch Chrome against localhost"]
         }
     ]
 }
