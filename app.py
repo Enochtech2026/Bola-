@@ -9,6 +9,22 @@ import os
 import sys
 from werkzeug.utils import secure_filename
 
+# Cloudinary setup (for persistent file storage)
+try:
+    import cloudinary
+    import cloudinary.uploader
+    import cloudinary.api
+    CLOUDINARY_ENABLED = bool(os.environ.get("CLOUDINARY_CLOUD_NAME"))
+    if CLOUDINARY_ENABLED:
+        cloudinary.config(
+            cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME"),
+            api_key=os.environ.get("CLOUDINARY_API_KEY"),
+            api_secret=os.environ.get("CLOUDINARY_API_SECRET"),
+            secure=True
+        )
+except ImportError:
+    CLOUDINARY_ENABLED = False
+
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 DB_PATH = os.path.join(BASE_DIR, 'instance')
 
@@ -39,6 +55,26 @@ login_manager.login_view = 'login'
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
+
+
+def upload_file_to_storage(file):
+    """Upload file to Cloudinary if enabled, else save locally. Returns filename/URL."""
+    if CLOUDINARY_ENABLED:
+        result = cloudinary.uploader.upload(
+            file,
+            resource_type='raw',
+            folder='bl_library',
+            public_id=secure_filename(file.filename).rsplit('.', 1)[0],
+            overwrite=True,
+            use_filename=True
+        )
+        return result.get('secure_url')
+    else:
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        return filename
+
 
 
 def admin_required(f):
@@ -168,9 +204,7 @@ def add_book():
         file = request.files.get('file')
         filename = None
         if file and file.filename and allowed_file(file.filename):
-            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            filename = upload_file_to_storage(file)
         if not title or not author:
             flash('Title and author are required.', 'danger')
             return redirect(url_for('add_book'))
@@ -200,10 +234,7 @@ def edit_book(book_id):
         category = request.form.get('category') or 'general'
         file = request.files.get('file')
         if file and file.filename and allowed_file(file.filename):
-            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            book.filename = filename
+            book.filename = upload_file_to_storage(file)
         if not title or not author:
             flash('Title and author are required.', 'danger')
             return redirect(url_for('edit_book', book_id=book.id))
@@ -242,7 +273,9 @@ def delete_book(book_id):
 @app.route('/uploads/<path:filename>')
 @login_required
 def uploads(filename):
-    # Only logged-in users can download books
+    # If filename is a full Cloudinary URL, redirect directly
+    if filename.startswith('http://') or filename.startswith('https://'):
+        return redirect(filename)
     # Check static/pdfs first (for seeded books), then uploads folder
     static_pdf = os.path.join(BASE_DIR, 'static', 'pdfs', filename)
     if os.path.isfile(static_pdf):
