@@ -17,41 +17,84 @@
             <p style="color: #999; margin: 5px 0 0 0;">Published: {{ book.year }}</p>
           {% endif %}
         </div>
-        
+
         {% if book.isbn %}
           <div style="background: #f5f5f5; padding: 10px; border-radius: 4px; margin-bottom: 20px;">
             <strong>ISBN:</strong> {{ book.isbn }}
           </div>
         {% endif %}
-        
+
         {% if book.category %}
           <div style="margin-bottom: 15px;">
             <span class="book-category">{{ book.category }}</span>
           </div>
         {% endif %}
-        
+
         {% if book.description %}
           <div style="background: white; padding: 15px; border-left: 4px solid var(--bl-accent); margin-bottom: 20px; line-height: 1.8;">
             {{ book.description }}
           </div>
         {% endif %}
-        
+
+        <!-- Borrow / Download / Return Section -->
         {% if book.filename %}
           <div style="margin-bottom: 20px;">
-            <a class="btn btn-primary btn-lg" href="{{ url_for('uploads', filename=book.filename) }}" target="_blank">
-              📄 Read PDF
-            </a>
+            {% if current_user.is_authenticated %}
+
+              {% if current_user.is_admin %}
+                <!-- Admin can always download -->
+                <a class="btn btn-success btn-lg me-2" href="{{ url_for('uploads', filename=book.filename) }}" target="_blank">
+                  ⬇ Download PDF
+                </a>
+
+              {% elif active_borrow %}
+                <!-- Student has borrowed - show download and return -->
+                <a class="btn btn-success btn-lg me-2" href="{{ url_for('uploads', filename=book.filename) }}" target="_blank">
+                  ⬇ Download PDF
+                </a>
+                <form method="POST" action="{{ url_for('student_return_book', borrow_id=active_borrow.id) }}" style="display:inline;">
+                  <button class="btn btn-outline-danger btn-lg">↩ Return Book</button>
+                </form>
+                <p class="text-muted mt-2" style="font-size:0.85rem;">
+                  📅 Due: {{ active_borrow.due_date.strftime('%d %b %Y') if active_borrow.due_date else 'N/A' }}
+                  {% if active_borrow.is_overdue %}
+                    <span class="badge bg-danger ms-1">Overdue</span>
+                  {% endif %}
+                </p>
+
+              {% else %}
+                <!-- Student has not borrowed - show borrow button -->
+                <form method="POST" action="{{ url_for('borrow_book', book_id=book.id) }}" style="display:inline;">
+                  <button class="btn btn-primary btn-lg">📖 Borrow to Download</button>
+                </form>
+                <p class="text-muted mt-2" style="font-size:0.85rem;">
+                  Borrow this book to unlock the PDF download. Borrow period is <strong>14 days</strong>.
+                </p>
+              {% endif %}
+
+            {% else %}
+              <!-- Not logged in -->
+              <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg">🔐 Login to Borrow</a>
+              <p class="text-muted mt-2" style="font-size:0.85rem;">You need to log in to borrow and download this book.</p>
+            {% endif %}
+          </div>
+        {% else %}
+          <!-- No PDF uploaded yet -->
+          <div class="alert alert-warning">
+            📭 No PDF available yet. The admin has not uploaded this book yet.
           </div>
         {% endif %}
-        
+
         <div style="border-top: 1px solid #ddd; padding-top: 20px; margin-top: 20px;">
-          <a class="btn btn-secondary" href="{{ url_for('edit_book', book_id=book.id) }}">✏️ Edit</a>
+          {% if current_user.is_authenticated and current_user.is_admin %}
+            <a class="btn btn-secondary me-2" href="{{ url_for('edit_book', book_id=book.id) }}">✏️ Edit</a>
+          {% endif %}
           <a class="btn btn-outline-primary" href="{{ url_for('index') }}">← Back to Books</a>
         </div>
       </div>
     </div>
   </div>
-  
+
   <div class="col-md-4">
     <div class="card">
       <div class="card-header">
@@ -65,7 +108,17 @@
         {% if book.year %}
           <p><strong>Year:</strong><br>{{ book.year }}</p>
         {% endif %}
-        <p><strong>Added:</strong><br>Available in library</p>
+        <p><strong>Status:</strong><br>
+          {% if book.filename %}
+            {% if active_borrow %}
+              <span class="badge bg-success">Borrowed by you</span>
+            {% else %}
+              <span class="badge bg-primary">Available to Borrow</span>
+            {% endif %}
+          {% else %}
+            <span class="badge bg-secondary">No PDF yet</span>
+          {% endif %}
+        </p>
       </div>
     </div>
   </div>
