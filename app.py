@@ -101,6 +101,26 @@ class Book(db.Model):
         return f'<Book {self.title} by {self.author}>'
 
 
+class Borrow(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    book_id = db.Column(db.Integer, db.ForeignKey('book.id'), nullable=False)
+    borrowed_at = db.Column(db.DateTime, default=__import__('datetime').datetime.utcnow)
+    due_date = db.Column(db.DateTime)
+    returned_at = db.Column(db.DateTime, nullable=True)
+    user = db.relationship('User', backref='borrows')
+    book = db.relationship('Book', backref='borrows')
+
+    @property
+    def is_overdue(self):
+        import datetime
+        if self.returned_at:
+            return False
+        if self.due_date and __import__('datetime').datetime.utcnow() > self.due_date:
+            return True
+        return False
+
+
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=True)
@@ -356,7 +376,7 @@ def login():
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if current_user.is_authenticated and current_user.is_admin:
-        return redirect(url_for('admin_bulk_upload'))
+        return redirect(url_for('admin_dashboard'))
     if request.method == 'POST':
         identifier = (request.form.get('username') or '').strip()
         password = request.form.get('password', '')
@@ -370,7 +390,7 @@ def admin_login():
         if user and user.is_admin and user.check_password(password):
             login_user(user)
             flash('Welcome, Admin!', 'success')
-            return redirect(url_for('admin_bulk_upload'))
+            return redirect(url_for('admin_dashboard'))
         flash('Invalid admin credentials.', 'danger')
         return redirect(url_for('admin_login'))
     return render_template('admin_login.html')
@@ -641,6 +661,59 @@ def seed_data():
         a.set_password('adminpass')
         db.session.add(a)
         db.session.commit()
+
+
+@app.route('/admin/dashboard')
+@login_required
+@admin_required
+def admin_dashboard():
+    import datetime
+    total_books = Book.query.count()
+    total_users = User.query.filter_by(is_admin=False).count()
+    total_borrowed = Borrow.query.filter_by(returned_at=None).count()
+    total_overdue = Borrow.query.filter(
+        Borrow.returned_at == None,
+        Borrow.due_date < datetime.datetime.utcnow()
+    ).count()
+    recent_users = User.query.filter_by(is_admin=False).order_by(User.id.desc()).limit(10).all()
+    active_borrows = Borrow.query.filter_by(returned_at=None).order_by(Borrow.borrowed_at.desc()).limit(10).all()
+    return render_template('admin_dashboard.html',
+        total_books=total_books,
+        total_users=total_users,
+        total_borrowed=total_borrowed,
+        total_overdue=total_overdue,
+        recent_users=recent_users,
+        active_borrows=active_borrows
+    )
+
+
+@app.route('/admin/borrow/<int:book_id>', methods=['POST'])
+@login_required
+def borrow_book(book_id):
+    import datetime
+    book = Book.query.get_or_404(book_id)
+    existing = Borrow.query.filter_by(user_id=current_user.id, book_id=book_id, returned_at=None).first()
+    if existing:
+        flash('You have already borrowed this book.', 'warning')
+        return redirect(url_for('view_book', book_id=book_id))
+    due = datetime.datetime.utcnow() + datetime.timedelta(days=14)
+    borrow = Borrow(user_id=current_user.id, book_id=book_id, due_date=due)
+    db.session.add(borrow)
+    db.session.commit()
+    flash(f'You borrowed "{book.title}". Due in 14 days.', 'success')
+    return redirect(url_for('view_book', book_id=book_id))
+
+
+@app.route('/admin/return/<int:borrow_id>', methods=['POST'])
+@login_required
+@admin_required
+def return_book(borrow_id):
+    import datetime
+    borrow = Borrow.query.get_or_404(borrow_id)
+    borrow.returned_at = datetime.datetime.utcnow()
+    db.session.commit()
+    flash('Book marked as returned.', 'success')
+    return redirect(url_for('admin_dashboard'))
 
 
 @app.route('/api/books', methods=['GET'])
