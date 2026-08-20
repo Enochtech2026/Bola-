@@ -21,10 +21,10 @@ def fix_database_url(url):
 app = Flask(__name__, static_folder='static')
 app.config['SQLALCHEMY_DATABASE_URI'] = fix_database_url(os.environ.get('DATABASE_URL', 'sqlite:///' + os.path.join(DB_PATH, 'books.db')))
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-change-me')
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or __import__('secrets').token_hex(32)
 app.config['UPLOAD_FOLDER'] = os.path.join(DB_PATH, 'uploads')
 app.config['ALLOWED_EXTENSIONS'] = {'pdf'}
-app.config['SECURITY_PASSWORD_SALT'] = os.environ.get('SECURITY_PASSWORD_SALT', 'dev-salt-change-me')
+app.config['SECURITY_PASSWORD_SALT'] = os.environ.get('SECURITY_PASSWORD_SALT', 'bl-library-salt-2024')
 # Optional mail config (SMTP). If not configured, reset link is shown in UI for demo.
 app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER')
 app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT') or 0)
@@ -39,6 +39,16 @@ login_manager.login_view = 'login'
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
+
+
+def admin_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not current_user.is_authenticated or not getattr(current_user, 'is_admin', False):
+            flash('Admin access required.', 'danger')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated
 
 
 class Book(db.Model):
@@ -132,9 +142,9 @@ def view_book(book_id):
 
 
 @app.route('/add', methods=['GET', 'POST'])
+@login_required
+@admin_required
 def add_book():
-    if not current_user.is_authenticated:
-        return redirect(url_for('login'))
     if request.method == 'POST':
         title = request.form.get('title', '').strip()
         author = request.form.get('author', '').strip()
@@ -164,9 +174,9 @@ def add_book():
 
 
 @app.route('/edit/<int:book_id>', methods=['GET', 'POST'])
+@login_required
+@admin_required
 def edit_book(book_id):
-    if not current_user.is_authenticated:
-        return redirect(url_for('login'))
     book = Book.query.get_or_404(book_id)
     if request.method == 'POST':
         title = request.form.get('title', '').strip()
@@ -201,9 +211,9 @@ def edit_book(book_id):
 
 
 @app.route('/delete/<int:book_id>', methods=['POST'])
+@login_required
+@admin_required
 def delete_book(book_id):
-    if not current_user.is_authenticated:
-        return redirect(url_for('login'))
     book = Book.query.get_or_404(book_id)
     if book.filename:
         try:
@@ -217,7 +227,9 @@ def delete_book(book_id):
 
 
 @app.route('/uploads/<path:filename>')
+@login_required
 def uploads(filename):
+    # Only logged-in users can download books
     # Check static/pdfs first (for seeded books), then uploads folder
     static_pdf = os.path.join(BASE_DIR, 'static', 'pdfs', filename)
     if os.path.isfile(static_pdf):
@@ -227,6 +239,10 @@ def uploads(filename):
             as_attachment=True,
             download_name=filename
         )
+    upload_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    if not os.path.isfile(upload_path):
+        flash('File not found. The admin may not have uploaded this PDF yet.', 'warning')
+        return redirect(url_for('index'))
     return send_from_directory(
         app.config['UPLOAD_FOLDER'],
         filename,
@@ -272,18 +288,46 @@ def register():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        identifier = request.form.get('username', '').strip()
+        # Accept field named 'username' or 'identifier' from the form
+        identifier = (request.form.get('username') or request.form.get('identifier') or '').strip()
         password = request.form.get('password', '')
         user = None
         if identifier:
-            user = User.query.filter((User.matric_no == identifier) | (User.username == identifier) | (User.email == identifier)).first()
+            user = User.query.filter(
+                (User.matric_no == identifier) |
+                (User.username == identifier) |
+                (User.email == identifier)
+            ).first()
         if user and user.check_password(password):
             login_user(user)
-            flash('Logged in.', 'success')
+            flash('Logged in successfully.', 'success')
             return redirect(request.args.get('next') or url_for('index'))
-        flash('Invalid credentials.', 'danger')
+        flash('Invalid credentials. Please check your Matric No, username, or email and try again.', 'danger')
         return redirect(url_for('login'))
     return render_template('login.html')
+
+
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    if current_user.is_authenticated and current_user.is_admin:
+        return redirect(url_for('admin_bulk_upload'))
+    if request.method == 'POST':
+        identifier = (request.form.get('username') or '').strip()
+        password = request.form.get('password', '')
+        user = None
+        if identifier:
+            user = User.query.filter(
+                (User.username == identifier) |
+                (User.email == identifier) |
+                (User.matric_no == identifier)
+            ).first()
+        if user and user.is_admin and user.check_password(password):
+            login_user(user)
+            flash('Welcome, Admin!', 'success')
+            return redirect(url_for('admin_bulk_upload'))
+        flash('Invalid admin credentials.', 'danger')
+        return redirect(url_for('admin_login'))
+    return render_template('admin_login.html')
 
 
 @app.route('/logout')
@@ -325,7 +369,7 @@ def forgot_password():
                 flash('Failed to send email. Here is the reset link for demo: ' + reset_url, 'warning')
         else:
             flash('Password reset link (demo): ' + reset_url, 'info')
-        return redirect(url_for('login'))
+        return redirect(url_for('forgot_password'))
     return render_template('forgot_password.html')
 
 
@@ -352,16 +396,6 @@ def reset_with_token(token):
         flash('Password updated. You can now log in.', 'success')
         return redirect(url_for('login'))
     return render_template('reset_password.html', token=token)
-
-
-def admin_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        if not current_user.is_authenticated or not getattr(current_user, 'is_admin', False):
-            flash('Admin access required.', 'danger')
-            return redirect(url_for('login'))
-        return f(*args, **kwargs)
-    return decorated
 
 
 @app.route('/admin/bulk_upload', methods=['GET', 'POST'])
