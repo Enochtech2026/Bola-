@@ -624,11 +624,13 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         cmd = sys.argv[1]
         if cmd == 'initdb':
-            init_db(seed=False)
+            with app.app_context():
+                init_db(seed=False)
             print('Initialized database (no seed).')
             sys.exit(0)
         if cmd == 'seed':
-            init_db(seed=True)
+            with app.app_context():
+                init_db(seed=True)
             print('Initialized database with seed data.')
             sys.exit(0)
     app.run(debug=True)
